@@ -1,0 +1,158 @@
+openapi: 3.0.3
+info:
+  title: Go API Template # APIの名称。新聞管理用のテンプレートを定義。
+  version: 1.0.0         # APIのバージョン。メジャー、マイナー、パッチ番号で管理。
+servers:
+  - url: http://0.0.0.0:8080/api/v1  # Dockerや他の環境でAPIをテストする際のベースURL。
+  - url: http://localhost:8080/api/v1 # ローカルホストでの開発時に使用。
+  - url: http://127.0.0.1:8080/api/v1 # ループバックアドレスを使用する場合のURL。
+paths:
+  /newspaper:
+    post:
+      summary: Create a new newspaper # 新聞記事を新規作成するエンドポイント。
+      operationId: createNewspaper    # 操作を一意に識別するID。
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewspaperCreateRequest' # 新規作成に必要なデータの構造を参照。
+        required: true # リクエストボディが必須であることを指定。
+      responses:
+        '201':
+          description: Created # リソースが正常に作成された場合のレスポンス。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewspaperResponse' # 作成された新聞データのレスポンス構造。
+        '400':
+          description: Bad Request # 入力データが不正だった場合のレスポンス。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse' # エラー情報の構造を参照。
+  /newspaper/{id}:
+    get:
+      summary: Find newspaper by ID # IDで新聞記事を取得するエンドポイント。
+      operationId: getNewspaperById
+      parameters:
+        - name: id
+          in: path
+          required: true # パスパラメータが必須であることを指定。
+          schema:
+            type: integer # IDは整数型。
+      responses:
+        '200':
+          description: OK # 正常にデータが取得された場合。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewspaperResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found # 指定されたIDの新聞記事が見つからない場合。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      summary: Update a newspaper by ID # IDで新聞記事を更新するエンドポイント。
+      operationId: updateNewspaperById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewspaperUpdateRequest' # 更新データの構造を参照。
+        required: true
+      responses:
+        '200':
+          description: Updated # 更新成功時のレスポンス。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewspaperResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete a newspaper by ID # IDで新聞記事を削除するエンドポイント。
+      operationId: deleteNewspaperById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: No Content # 成功した場合、コンテンツなしのレスポンスを返す。
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    NewspaperResponse:
+      type: object
+      properties:
+        id:
+          type: integer # 新聞記事の一意の識別子。
+        title:
+          type: string  # 新聞記事のタイトル。
+        columnName:
+          type: string  # コラム名を指定。
+      required:
+        - id
+        - title
+        - columnName
+    NewspaperUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string  # 更新対象のタイトル。
+        columnName:
+          type: string  # 更新対象のコラム名。
+    NewspaperCreateRequest:
+      type: object
+      properties:
+        title:
+          type: string  # 作成時に必要な新聞記事のタイトル。
+        columnName:
+          type: string  # 作成時に必要なコラム名。
+      required:
+        - title
+        - columnName
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string  # エラーに関する詳細な説明を含む文字列。
+      required:
+        - message # エラーメッセージは必須プロパティ。
