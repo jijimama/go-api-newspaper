@@ -1,0 +1,36 @@
+version: '3.9'
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_USER: app
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: api_database
+      MYSQL_ALLOW_EMPTY_PASSWORD: yes
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "mysql"] # MySQL サーバーが応答しているか確認。
+      interval: 3s
+      timeout: 5s
+      retries: 5
+      start_period: 5s # コンテナ起動後、5秒間は失敗を無視（初期化の遅れに対応）。
+    restart: always # コンテナが停止した場合、常に再起動するように設定。
+    volumes:
+      - ./external-apps/db/:/docker-entrypoint-initdb.d
+    networks: # api-network という名前のネットワークに接続
+      - api-network
+# MySQL コンテナに接続し、CLI を利用できるようにするサービス
+  mysql-cli:
+    image: mysql:8.0
+    command: mysql -hmysql -uapp -ppassword api_database # MySQLクライアントがデータベース api_database に接続するためのコマンドを指定
+    depends_on:
+      mysql: # サービスが正常に起動し、健康状態になるまでこのサービスの起動を待機
+        condition: service_healthy
+    networks: # mysql サービスと通信可能なネットワークに接続
+      - api-network
+# サービス同士の通信を管理するネットワークを定義
+networks:
+  api-network:
+    driver: bridge # Docker 内の仮想ネットワークを作成し、サービス間の通信を可能にする
