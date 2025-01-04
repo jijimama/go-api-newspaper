@@ -49,6 +49,8 @@ func main() {
 		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler)) // Swagger UIエンドポイントを追加
 	}
 
+	router.GET("/health", controllers.Health)
+	
 	apiGroup := router.Group("/api")
 	{
 		v1 := apiGroup.Group("/v1")
