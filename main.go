@@ -15,6 +15,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/timeout"
+	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	middleware "github.com/oapi-codegen/gin-middleware"
 	swaggerfiles "github.com/swaggo/files"
@@ -56,6 +57,8 @@ func main() {
 
 	router := gin.Default() // HTTPリクエストを振り分けるためのルーター
 
+	router.Use(ginzap.Ginzap(logger.ZapLogger, time.RFC3339, true)) // リクエストやレスポンスをログに出力するための関数
+	router.Use(ginzap.RecoveryWithZap(logger.ZapLogger, true))      // パニックが発生したときにログにエラーとスタックトレースを記録するための関数
 	router.Use(corsMiddleware(configs.Config.APICorsAllowOrigins))
 
 	// OpenAPI仕様を取得（API仕様のバリデーション用）
