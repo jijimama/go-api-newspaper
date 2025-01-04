@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	middleware "github.com/oapi-codegen/gin-middleware"
 	swaggerfiles "github.com/swaggo/files"
@@ -25,12 +26,20 @@ import (
 	"go-api-newspaper/configs"
 )
 
+func corsMiddleware(allowOrigins []string) gin.HandlerFunc {
+	config := cors.DefaultConfig()
+	config.AllowOrigins = allowOrigins
+	return cors.New(config)
+}
+
 func main() {
 	if err := models.SetDatabase(models.InstanceMySQL); err != nil {
 		logger.Fatal(err.Error())
 	}
 
 	router := gin.Default() // HTTPリクエストを振り分けるためのルーター
+
+	router.Use(corsMiddleware(configs.Config.APICorsAllowOrigins))
 
 	// OpenAPI仕様を取得（API仕様のバリデーション用）
 	swagger, err := api.GetSwagger()
