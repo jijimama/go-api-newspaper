@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/timeout"
 	"github.com/gin-gonic/gin"
 	middleware "github.com/oapi-codegen/gin-middleware"
 	swaggerfiles "github.com/swaggo/files"
@@ -30,6 +31,22 @@ func corsMiddleware(allowOrigins []string) gin.HandlerFunc {
 	config := cors.DefaultConfig()
 	config.AllowOrigins = allowOrigins
 	return cors.New(config)
+}
+
+func timeoutMiddleware(duration time.Duration) gin.HandlerFunc {
+	return timeout.New(
+		timeout.WithTimeout(duration),
+		timeout.WithHandler(func(c *gin.Context) {
+			c.Next()
+		}),
+		timeout.WithResponse(func(c *gin.Context) {
+			c.JSON(
+				http.StatusRequestTimeout,
+				api.ErrorResponse{Message: "timeout"},
+			)
+			c.Abort()
+		}),
+	)
 }
 
 func main() {
@@ -62,6 +79,7 @@ func main() {
 	
 	apiGroup := router.Group("/api")
 	{
+		apiGroup.Use(timeoutMiddleware(2 * time.Second))
 		v1 := apiGroup.Group("/v1")
 		{
 			// OpenAPI仕様に基づくリクエストバリデーションをミドルウェアとして追加
