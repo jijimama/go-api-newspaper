@@ -15,3 +15,16 @@ type Article struct {
 	NewspaperID int
 	Newspaper   *Newspaper
 }
+
+// 構造体をjsonに変換する
+func (a *Article) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&api.ArticleResponse{
+		Id:          a.ID,
+		Body:        a.Body,
+		Year:        a.Year,
+		Month:       a.Month,
+		Day:         a.Day,
+		NewspaperId: a.NewspaperID,
+		Newspaper:   api.Newspaper
+	})
+}
