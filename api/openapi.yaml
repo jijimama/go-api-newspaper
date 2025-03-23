@@ -261,6 +261,19 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
+    Newspaper:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        columnName:
+          type: string
+      required:
+        - id
+        - title
+        - columnName
     NewspaperResponse:
       type: object
       properties:
@@ -296,8 +309,6 @@ components:
       properties:
         id:
           type: integer
-        newspaperId:
-          type: integer
         body:
           type: string
         year:
@@ -306,6 +317,8 @@ components:
           type: integer
         day:
           type: integer
+        newspaper:
+          $ref: '#/components/schemas/Newspaper'
       required:
         - id
         - newspaperId
@@ -316,8 +329,6 @@ components:
     ArticleCreateRequest:
       type: object
       properties:
-        newspaperId:
-          type: integer
         body:
           type: string
         year:
@@ -326,6 +337,8 @@ components:
           type: integer
         day:
           type: integer
+        newspaper:
+          $ref: '#/components/schemas/Newspaper'
       required:
         - newspaperId
         - body
@@ -343,6 +356,8 @@ components:
           type: integer
         day:
           type: integer
+        newspaper:
+          $ref: '#/components/schemas/Newspaper'
     ErrorResponse:
       type: object
       properties:
