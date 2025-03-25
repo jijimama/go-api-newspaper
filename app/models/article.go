@@ -24,7 +24,9 @@ func (a *Article) MarshalJSON() ([]byte, error) {
 		Year:        a.Year,
 		Month:       a.Month,
 		Day:         a.Day,
-		NewspaperId: a.NewspaperID,
-		Newspaper:   api.Newspaper
+		Newspaper:   api.Newspaper{
+			Id:   &a.Newspaper.ID,
+			Name: a.Newspaper.Name,
+		}
 	})
 }
