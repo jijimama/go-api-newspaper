@@ -30,3 +30,23 @@ func (a *Article) MarshalJSON() ([]byte, error) {
 		}
 	})
 }
+
+func CreateArticle(body string, year int, month int, day int, newspaperID int) (*Article, error) {
+	newspaper, err := GetNewspaper(newspaperID)
+	if err != nil {
+		return nil, err
+	}
+	
+	article := &Article{
+		Body:        body,
+		Year:        year,
+		Month:       month,
+		Day:         day,
+		Newspaper:   newspaper,
+		NewspaperID: newspaper.ID,
+	}
+	if err := DB.Create(article).Error; err != nil {
+		return nil, err
+	}
+	return article, nil
+}
