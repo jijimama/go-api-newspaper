@@ -50,3 +50,11 @@ func CreateArticle(body string, year int, month int, day int, newspaperID int) (
 	}
 	return article, nil
 }
+
+fun GetArticle(ID int) (*Article, error) {
+	var article = Article{}
+	if err := DB.First(&article, ID).Error; err != nil {
+		return nil, err
+	}
+	return &article, nil
+}
