@@ -58,3 +58,10 @@ fun GetArticle(ID int) (*Article, error) {
 	}
 	return &article, nil
 }
+
+fun (a *Article) Save() error {
+	if err := DB.Save(&a).Error; err != nil {
+		return err
+	}
+	return nil
+}
