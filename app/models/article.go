@@ -65,3 +65,10 @@ fun (a *Article) Save() error {
 	}
 	return nil
 }
+
+fun (a *Article) Delete() error {
+	if err := DB.Where("id = ?", &a.ID).Delete(&a).Error; err != nil {
+		return err
+	}
+	return nil
+}
