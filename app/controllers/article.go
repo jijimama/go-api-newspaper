@@ -34,3 +34,14 @@ func (a *ArticleHandler) CreateArticle(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, createdArticle)
 }
+
+func (a *ArticleHandler) GetArticleById(c *gin.Context, ID int) {
+	article, err := models.GetArticle(ID)
+	if err != nil {
+		logger.Error(err.Error())
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, article)
+}
