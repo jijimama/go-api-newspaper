@@ -45,3 +45,43 @@ func (a *ArticleHandler) GetArticleById(c *gin.Context, ID int) {
 
 	c.JSON(http.StatusOK, article)
 }
+
+fun (a *ArticleHandler) UpdateArticleById(c *gin.Context, ID int) {
+	var requestBody api.UpdateArticleByIdJSONRequestBody
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		logger.Warn(err.Error())
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	article, err := models.GetArticle(ID)
+	if err != nil {
+		logger.Error(err.Error())
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	if requestBody.Body != nil {
+		article.Body = *requestBody.Body
+	}
+	if requestBody.Year != nil {
+		article.Year = *requestBody.Year
+	}
+	if requestBody.Month != nil {
+		article.Month = *requestBody.Month
+	}
+	if requestBody.Day != nil {
+		article.Day = *requestBody.Day
+	}
+	if requestBody.NewspaperID != nil {
+		article.NewspaperID = *requestBody.NewspaperID
+	}
+
+	if err := article.Save(); err != nil {
+		logger.Error(err.Error())
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, article)
+}
