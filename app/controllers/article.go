@@ -85,3 +85,14 @@ fun (a *ArticleHandler) UpdateArticleById(c *gin.Context, ID int) {
 
 	c.JSON(http.StatusOK, article)
 }
+
+fun c (a *ArticleHandler) DeleteArticleById(c *gin.Context, ID int) {
+	article := models.Article{ID: ID}
+
+	if err := article.Delete(); err != nil {
+		logger.Error(err.Error())
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+	c.JSON(http.StatusNoContent, nil) // 204 No Content
+}
