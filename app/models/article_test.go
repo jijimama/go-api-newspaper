@@ -19,3 +19,7 @@ type ArticleTestSuite struct {
 	tester.DBSQLiteSuite
 	originalDB *gorm.DB
 }
+
+func TestArticleTestSuite(t *testing.T) {
+	suite.Run(t, new(ArticleTestSuite))
+}
