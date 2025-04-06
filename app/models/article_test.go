@@ -23,3 +23,8 @@ type ArticleTestSuite struct {
 func TestArticleTestSuite(t *testing.T) {
 	suite.Run(t, new(ArticleTestSuite))
 }
+
+func (suite *ArticleTestSuite) SetupSuite() {
+    suite.DBSQLiteSuite.SetupSuite()
+    suite.originalDB = models.DB
+}
