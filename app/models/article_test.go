@@ -28,3 +28,9 @@ func (suite *ArticleTestSuite) SetupSuite() {
     suite.DBSQLiteSuite.SetupSuite()
     suite.originalDB = models.DB
 }
+
+func (suite *ArticleTestSuite) MockDB() sqlmock.Sqlmock {
+    mock, mockGormDB := tester.MockDB()
+    models.DB = mockGormDB
+    return mock
+}
