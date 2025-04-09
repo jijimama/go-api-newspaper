@@ -38,3 +38,13 @@ func (suite *ArticleTestSuite) MockDB() sqlmock.Sqlmock {
 func (suite *ArticleTestSuite) AfterTest(suiteName, testName string) {
     models.DB = suite.originalDB
 }
+
+func (suite *ArticleTestSuite) TestArticle() {
+    createdArticle, err := models.CreateArticle("test body", 2023, 10, 2, 1)
+    suite.Assert().Nil(err)
+    suite.Assert().Equal("test body", createdArticle.Body)
+    suite.Assert().Equal(2023, createdArticle.Year)
+    suite.Assert().Equal(10, createdArticle.Month)
+    suite.Assert().Equal(2, createdArticle.Day)
+    suite.Assert().Equal(1, createdArticle.NewspaperID)
+}
