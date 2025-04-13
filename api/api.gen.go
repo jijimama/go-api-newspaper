@@ -21,9 +21,35 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+// ArticleCreateRequest defines model for ArticleCreateRequest.
+type ArticleCreateRequest struct {
+	Body      string    `json:"body"`
+	Day       int       `json:"day"`
+	Month     int       `json:"month"`
+	Newspaper Newspaper `json:"newspaper"`
+	Year      int       `json:"year"`
+}
+
+// ArticleResponse defines model for ArticleResponse.
+type ArticleResponse struct {
+	Body      string    `json:"body"`
+	Day       int       `json:"day"`
+	Id        int       `json:"id"`
+	Month     int       `json:"month"`
+	Newspaper Newspaper `json:"newspaper"`
+	Year      int       `json:"year"`
+}
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	Message string `json:"message"`
+}
+
+// Newspaper defines model for Newspaper.
+type Newspaper struct {
+	ColumnName string `json:"columnName"`
+	Id         int    `json:"id"`
+	Title      string `json:"title"`
 }
 
 // NewspaperCreateRequest defines model for NewspaperCreateRequest.
@@ -44,6 +70,9 @@ type NewspaperUpdateRequest struct {
 	ColumnName *string `json:"columnName,omitempty"`
 	Title      *string `json:"title,omitempty"`
 }
+
+// CreateArticleJSONRequestBody defines body for CreateArticle for application/json ContentType.
+type CreateArticleJSONRequestBody = ArticleCreateRequest
 
 // CreateNewspaperJSONRequestBody defines body for CreateNewspaper for application/json ContentType.
 type CreateNewspaperJSONRequestBody = NewspaperCreateRequest
@@ -124,6 +153,11 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// CreateArticleWithBody request with any body
+	CreateArticleWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateArticle(ctx context.Context, body CreateArticleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// CreateNewspaperWithBody request with any body
 	CreateNewspaperWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -139,6 +173,30 @@ type ClientInterface interface {
 	UpdateNewspaperByIdWithBody(ctx context.Context, id int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateNewspaperById(ctx context.Context, id int, body UpdateNewspaperByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) CreateArticleWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateArticleRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateArticle(ctx context.Context, body CreateArticleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateArticleRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) CreateNewspaperWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -211,6 +269,46 @@ func (c *Client) UpdateNewspaperById(ctx context.Context, id int, body UpdateNew
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewCreateArticleRequest calls the generic CreateArticle builder with application/json body
+func NewCreateArticleRequest(server string, body CreateArticleJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateArticleRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateArticleRequestWithBody generates requests for CreateArticle with any type of body
+func NewCreateArticleRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/article")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
 }
 
 // NewCreateNewspaperRequest calls the generic CreateNewspaper builder with application/json body
@@ -411,6 +509,11 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// CreateArticleWithBodyWithResponse request with any body
+	CreateArticleWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateArticleResponse, error)
+
+	CreateArticleWithResponse(ctx context.Context, body CreateArticleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateArticleResponse, error)
+
 	// CreateNewspaperWithBodyWithResponse request with any body
 	CreateNewspaperWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateNewspaperResponse, error)
 
@@ -426,6 +529,29 @@ type ClientWithResponsesInterface interface {
 	UpdateNewspaperByIdWithBodyWithResponse(ctx context.Context, id int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateNewspaperByIdResponse, error)
 
 	UpdateNewspaperByIdWithResponse(ctx context.Context, id int, body UpdateNewspaperByIdJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateNewspaperByIdResponse, error)
+}
+
+type CreateArticleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *ArticleResponse
+	JSON400      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateArticleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateArticleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type CreateNewspaperResponse struct {
@@ -522,6 +648,23 @@ func (r UpdateNewspaperByIdResponse) StatusCode() int {
 	return 0
 }
 
+// CreateArticleWithBodyWithResponse request with arbitrary body returning *CreateArticleResponse
+func (c *ClientWithResponses) CreateArticleWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateArticleResponse, error) {
+	rsp, err := c.CreateArticleWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateArticleResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateArticleWithResponse(ctx context.Context, body CreateArticleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateArticleResponse, error) {
+	rsp, err := c.CreateArticle(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateArticleResponse(rsp)
+}
+
 // CreateNewspaperWithBodyWithResponse request with arbitrary body returning *CreateNewspaperResponse
 func (c *ClientWithResponses) CreateNewspaperWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateNewspaperResponse, error) {
 	rsp, err := c.CreateNewspaperWithBody(ctx, contentType, body, reqEditors...)
@@ -572,6 +715,39 @@ func (c *ClientWithResponses) UpdateNewspaperByIdWithResponse(ctx context.Contex
 		return nil, err
 	}
 	return ParseUpdateNewspaperByIdResponse(rsp)
+}
+
+// ParseCreateArticleResponse parses an HTTP response from a CreateArticleWithResponse call
+func ParseCreateArticleResponse(rsp *http.Response) (*CreateArticleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateArticleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ArticleResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseCreateNewspaperResponse parses an HTTP response from a CreateNewspaperWithResponse call
@@ -722,6 +898,9 @@ func ParseUpdateNewspaperByIdResponse(rsp *http.Response) (*UpdateNewspaperByIdR
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Create a new article
+	// (POST /article)
+	CreateArticle(c *gin.Context)
 	// Create a new newspaper
 	// (POST /newspaper)
 	CreateNewspaper(c *gin.Context)
@@ -744,6 +923,19 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(c *gin.Context)
+
+// CreateArticle operation middleware
+func (siw *ServerInterfaceWrapper) CreateArticle(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateArticle(c)
+}
 
 // CreateNewspaper operation middleware
 func (siw *ServerInterfaceWrapper) CreateNewspaper(c *gin.Context) {
@@ -857,6 +1049,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
+	router.POST(options.BaseURL+"/article", wrapper.CreateArticle)
 	router.POST(options.BaseURL+"/newspaper", wrapper.CreateNewspaper)
 	router.DELETE(options.BaseURL+"/newspaper/:id", wrapper.DeleteNewspaperById)
 	router.GET(options.BaseURL+"/newspaper/:id", wrapper.GetNewspaperById)
@@ -866,16 +1059,18 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+yV30/bMBDH/5XotkerSQFpyG8rDFRN6ia0PaE+mPhojRLb2Jeiqsr/Ptmm6U8YSFBe",
-	"UF+iyzn3uft+r15AaWprNGrywBfgyynWIj7+cM64K/TWaI8hYJ2x6EhhfF2j92ISX9DcInDw5JSeQNsy",
-	"cHjfKIcS+HWXOGbLRHNzhyVBy2CED94Ki+7MoSC8wvsGPe0WK03V1Hok6n31GJCi6gUkKY2tf+1ZqKeb",
-	"/w+PkmthpQkn6F7BqSSwV8P+tfJ9JrhVMoSUvjUxOZ2CS5N9/z3M/mBtK0GBeobOK6OBQ79X9IpQwljU",
-	"wirgcNwresfAwAqaRrhcL7uI4CY1EPAFKaOHEjgkh3TtQhoZehoYOU8dakIdTwprK1XGs/mdDxhLZ4en",
-	"rw5vgcOXfGX9/NH3+ROGbDclItdgDCR/xB6Oiv7bU3QOjAASfemUpTTYRCjDaE+K4s1qb679nroDIbPV",
-	"XBj4pq6Fm3dEmcg0PmQrSUPSSuF8oWQbICRWSLgr9HmMdyMYzIcyesWJGgmdB369ABVIgn+AgY6mTluz",
-	"qRFb63l7G9vxjoAnCWu92ZHJzh6n+qFzDrVPDld7ZCi7MI2WWwonbZLCSZ7sZp4NzwPgBPds7SXSRyhZ",
-	"HHYVf/38dAdwuFBa7nOGFVROd72RbqwD2eMdr4rNm/dFV8WB/ZkI5adJu1ns+wuLeehmS+s1rgIOUyLL",
-	"87zoxR8/LU6LXFiVz/rQsq2kypSimhpPz6f1j77Fr/U308btvwAAAP//tanViY4LAAA=",
+	"H4sIAAAAAAAC/+yWX0/bPBTGv0p03vcyalJAGvIdfwaqJnUT2q4QFyY+tEaJbewTUFXlu0+225K0KTAN",
+	"CpMQF1TOic8vz3PyOHModGW0QkUO2BxcMcWKh59HlmRR4olFTniBdzU68uvGaoOWJIaqay1m/j/NDAID",
+	"R1aqCTQpCN5el4pwgtZfqLSiaf8lhQ/OcIPWX/7f4g0w+C97JMwWeNl4VdikMENu+/ZrUrB4V0uLAthl",
+	"JG33WNy5JIrIV+lyH319iwX5BgslLtAZrRy+hghSfCxxpID0LxT6aq222/Wp0Dk+wR6J1jCWhX09xu3n",
+	"7+5f6LKu1JhX2OvCNrFJUvkCqKBNrE3brZ6EfOa1eYb4hWR/CrXdoQ+o4C8j3kbBtZZ+SaobHYrjXXCu",
+	"k6Mfo+QnVqbk5Knv0TqpFTAYDvJB7ltog4obCQz2B/lgH1IwnKYBLuMxMgK2jvgenpPUaiSAQZyPRbJA",
+	"lAsdHS+SpNCKUIX7uDGlLMKd2a3zCMuYfi4IehO86ZpDtsawECcj0O/lw9dmWE1eaC/QFVYaioJGPuEl",
+	"PcjzV+vczaSevsdcJI+qpODqquJ2tiJKeKLwIVla6UuyTgg/5ey4FaJv4e2WoNmxu5vJ8u/5+2hp1+Fs",
+	"LkXjIQSWSLhp9GlYX0lwPBuJkAGWV0hoHbDLOUhP4nPBH6whrGIadj1KW8+8cVJfbRh4ELHaDzvWyclC",
+	"1XfV2fc+2F3vsabkTNdKrDkcvYkOR3uS61kyOvWAE+x5a8+R3sPJfLev4vdvn9MBDM6kEn2TYTgV083Z",
+	"iF8iOxqPNzwqul9ULzoqdjyfkVB8DulKi74IC3Vo75ejV9sSGEyJDMuyfBD+2GF+mGfcyOx+CE26VlTq",
+	"gpdT7ejpsuHel7DbsFt21fwOAAD//yUCyDs3EAAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

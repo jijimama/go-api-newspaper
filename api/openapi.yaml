@@ -117,6 +117,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /article:
+    post:
+      summary: Create a new article # 新聞記事を新規作成するエンドポイント。
+      operationId: createArticle
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArticleCreateRequest' # 新規作成に必要なデータの構造を参照。
+        required: true
+      responses:
+        '201':
+          description: Created # リソースが正常に作成された場合のレスポンス。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleResponse' # 作成された新聞データのレスポンス構造。
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
     Newspaper:
@@ -162,6 +185,47 @@ components:
       required:
         - title
         - columnName
+    ArticleResponse:
+      type: object
+      properties:
+        id:
+          type: integer  # 新聞記事の一意の識別子。
+        body:
+          type: string  # 新聞記事の本文。
+        newspaper:
+          $ref: '#/components/schemas/Newspaper' # 新聞記事に関連する新聞データを参照。
+        year:
+          type: integer  # 新聞記事の発行年。
+        month:
+          type: integer  # 新聞記事の発行月。
+        day:
+          type: integer  # 新聞記事の発行日。
+      required:
+        - id
+        - body
+        - newspaper
+        - year
+        - month
+        - day
+    ArticleCreateRequest:
+      type: object
+      properties:
+        body:
+          type: string  # 新聞記事の本文。
+        newspaper:
+          $ref: '#/components/schemas/Newspaper' # 新聞記事に関連する新聞データを参照。
+        year:
+          type: integer  # 新聞記事の発行年。
+        month:
+          type: integer  # 新聞記事の発行月。
+        day:
+          type: integer  # 新聞記事の発行日。
+      required:
+        - body
+        - newspaper
+        - year
+        - month
+        - day
     ErrorResponse:
       type: object
       properties:
