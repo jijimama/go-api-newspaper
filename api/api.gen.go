@@ -158,6 +158,9 @@ type ClientInterface interface {
 
 	CreateArticle(ctx context.Context, body CreateArticleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetArticleById request
+	GetArticleById(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// CreateNewspaperWithBody request with any body
 	CreateNewspaperWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -189,6 +192,18 @@ func (c *Client) CreateArticleWithBody(ctx context.Context, contentType string, 
 
 func (c *Client) CreateArticle(ctx context.Context, body CreateArticleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateArticleRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetArticleById(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetArticleByIdRequest(c.Server, id)
 	if err != nil {
 		return nil, err
 	}
@@ -307,6 +322,40 @@ func NewCreateArticleRequestWithBody(server string, contentType string, body io.
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetArticleByIdRequest generates requests for GetArticleById
+func NewGetArticleByIdRequest(server string, id int) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/article/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -514,6 +563,9 @@ type ClientWithResponsesInterface interface {
 
 	CreateArticleWithResponse(ctx context.Context, body CreateArticleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateArticleResponse, error)
 
+	// GetArticleByIdWithResponse request
+	GetArticleByIdWithResponse(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*GetArticleByIdResponse, error)
+
 	// CreateNewspaperWithBodyWithResponse request with any body
 	CreateNewspaperWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateNewspaperResponse, error)
 
@@ -548,6 +600,30 @@ func (r CreateArticleResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r CreateArticleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetArticleByIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ArticleResponse
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetArticleByIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetArticleByIdResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -665,6 +741,15 @@ func (c *ClientWithResponses) CreateArticleWithResponse(ctx context.Context, bod
 	return ParseCreateArticleResponse(rsp)
 }
 
+// GetArticleByIdWithResponse request returning *GetArticleByIdResponse
+func (c *ClientWithResponses) GetArticleByIdWithResponse(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*GetArticleByIdResponse, error) {
+	rsp, err := c.GetArticleById(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetArticleByIdResponse(rsp)
+}
+
 // CreateNewspaperWithBodyWithResponse request with arbitrary body returning *CreateNewspaperResponse
 func (c *ClientWithResponses) CreateNewspaperWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateNewspaperResponse, error) {
 	rsp, err := c.CreateNewspaperWithBody(ctx, contentType, body, reqEditors...)
@@ -744,6 +829,46 @@ func ParseCreateArticleResponse(rsp *http.Response) (*CreateArticleResponse, err
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetArticleByIdResponse parses an HTTP response from a GetArticleByIdWithResponse call
+func ParseGetArticleByIdResponse(rsp *http.Response) (*GetArticleByIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetArticleByIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ArticleResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -901,6 +1026,9 @@ type ServerInterface interface {
 	// Create a new article
 	// (POST /article)
 	CreateArticle(c *gin.Context)
+	// Find article by ID
+	// (GET /article/{id})
+	GetArticleById(c *gin.Context, id int)
 	// Create a new newspaper
 	// (POST /newspaper)
 	CreateNewspaper(c *gin.Context)
@@ -935,6 +1063,30 @@ func (siw *ServerInterfaceWrapper) CreateArticle(c *gin.Context) {
 	}
 
 	siw.Handler.CreateArticle(c)
+}
+
+// GetArticleById operation middleware
+func (siw *ServerInterfaceWrapper) GetArticleById(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetArticleById(c, id)
 }
 
 // CreateNewspaper operation middleware
@@ -1050,6 +1202,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.POST(options.BaseURL+"/article", wrapper.CreateArticle)
+	router.GET(options.BaseURL+"/article/:id", wrapper.GetArticleById)
 	router.POST(options.BaseURL+"/newspaper", wrapper.CreateNewspaper)
 	router.DELETE(options.BaseURL+"/newspaper/:id", wrapper.DeleteNewspaperById)
 	router.GET(options.BaseURL+"/newspaper/:id", wrapper.GetNewspaperById)
@@ -1059,18 +1212,18 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

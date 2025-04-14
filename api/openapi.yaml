@@ -140,6 +140,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /article/{id}:
+    get:
+      summary: Find article by ID # IDで新聞記事を取得するエンドポイント。
+      operationId: getArticleById
+      parameters:
+        - name: id
+          in: path
+          required: true # パスパラメータが必須であることを指定。
+          schema:
+            type: integer # IDは整数型。
+      responses:
+        '200':
+          description: OK # 正常にデータが取得された場合。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found # 指定されたIDの新聞記事が見つからない場合。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
     Newspaper:
