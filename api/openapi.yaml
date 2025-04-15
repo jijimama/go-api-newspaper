@@ -169,6 +169,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      summary: Update a article by ID # IDで新聞記事を更新するエンドポイント。
+      operationId: updateArticleById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArticleUpdateRequest' # 更新データの構造を参照。
+        required: true
+      responses:
+        '200':
+          description: Updated # 更新成功時のレスポンス。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
     Newspaper:
@@ -236,6 +270,19 @@ components:
         - year
         - month
         - day
+    ArticleUpdateRequest:
+      type: object
+      properties:
+        body:
+          type: string  # 更新対象の新聞記事の本文。
+        newspaper:
+          $ref: '#/components/schemas/Newspaper' # 新聞記事に関連する新聞データを参照。
+        year:
+          type: integer  # 更新対象の新聞記事の発行年。
+        month:
+          type: integer  # 更新対象の新聞記事の発行月。
+        day:
+          type: integer  # 更新対象の新聞記事の発行日。
     ArticleCreateRequest:
       type: object
       properties:
