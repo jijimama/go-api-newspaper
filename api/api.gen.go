@@ -170,6 +170,9 @@ type ClientInterface interface {
 
 	CreateArticle(ctx context.Context, body CreateArticleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteArticleById request
+	DeleteArticleById(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetArticleById request
 	GetArticleById(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -209,6 +212,18 @@ func (c *Client) CreateArticleWithBody(ctx context.Context, contentType string, 
 
 func (c *Client) CreateArticle(ctx context.Context, body CreateArticleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateArticleRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteArticleById(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteArticleByIdRequest(c.Server, id)
 	if err != nil {
 		return nil, err
 	}
@@ -363,6 +378,40 @@ func NewCreateArticleRequestWithBody(server string, contentType string, body io.
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteArticleByIdRequest generates requests for DeleteArticleById
+func NewDeleteArticleByIdRequest(server string, id int) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/article/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -651,6 +700,9 @@ type ClientWithResponsesInterface interface {
 
 	CreateArticleWithResponse(ctx context.Context, body CreateArticleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateArticleResponse, error)
 
+	// DeleteArticleByIdWithResponse request
+	DeleteArticleByIdWithResponse(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*DeleteArticleByIdResponse, error)
+
 	// GetArticleByIdWithResponse request
 	GetArticleByIdWithResponse(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*GetArticleByIdResponse, error)
 
@@ -693,6 +745,29 @@ func (r CreateArticleResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r CreateArticleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteArticleByIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteArticleByIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteArticleByIdResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -858,6 +933,15 @@ func (c *ClientWithResponses) CreateArticleWithResponse(ctx context.Context, bod
 	return ParseCreateArticleResponse(rsp)
 }
 
+// DeleteArticleByIdWithResponse request returning *DeleteArticleByIdResponse
+func (c *ClientWithResponses) DeleteArticleByIdWithResponse(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*DeleteArticleByIdResponse, error) {
+	rsp, err := c.DeleteArticleById(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteArticleByIdResponse(rsp)
+}
+
 // GetArticleByIdWithResponse request returning *GetArticleByIdResponse
 func (c *ClientWithResponses) GetArticleByIdWithResponse(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*GetArticleByIdResponse, error) {
 	rsp, err := c.GetArticleById(ctx, id, reqEditors...)
@@ -963,6 +1047,39 @@ func ParseCreateArticleResponse(rsp *http.Response) (*CreateArticleResponse, err
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteArticleByIdResponse parses an HTTP response from a DeleteArticleByIdWithResponse call
+func ParseDeleteArticleByIdResponse(rsp *http.Response) (*DeleteArticleByIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteArticleByIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -1200,6 +1317,9 @@ type ServerInterface interface {
 	// Create a new article
 	// (POST /article)
 	CreateArticle(c *gin.Context)
+	// Delete a article by ID
+	// (DELETE /article/{id})
+	DeleteArticleById(c *gin.Context, id int)
 	// Find article by ID
 	// (GET /article/{id})
 	GetArticleById(c *gin.Context, id int)
@@ -1240,6 +1360,30 @@ func (siw *ServerInterfaceWrapper) CreateArticle(c *gin.Context) {
 	}
 
 	siw.Handler.CreateArticle(c)
+}
+
+// DeleteArticleById operation middleware
+func (siw *ServerInterfaceWrapper) DeleteArticleById(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteArticleById(c, id)
 }
 
 // GetArticleById operation middleware
@@ -1403,6 +1547,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.POST(options.BaseURL+"/article", wrapper.CreateArticle)
+	router.DELETE(options.BaseURL+"/article/:id", wrapper.DeleteArticleById)
 	router.GET(options.BaseURL+"/article/:id", wrapper.GetArticleById)
 	router.PATCH(options.BaseURL+"/article/:id", wrapper.UpdateArticleById)
 	router.POST(options.BaseURL+"/newspaper", wrapper.CreateNewspaper)
@@ -1414,19 +1559,19 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+xW3U7jPBB9lWi+7zJqUkBalDt+FlSt1F2h3SvEhYmH1iixje2AqirvvrKdtE2T/uwu",
-	"BJAqLqicsef4nOOZmUMqcik4cqMhmYNOp5gT9/NMGZZmeKGQGLzBpwK1setSCYnKMHRR94LO7H8zkwgJ",
-	"aKMYn0AZAiWr64wbnKCyH3LBzbT7E8cXLYlEZT//r/ABEvgvWiKMKnjReBFYhjBDorrOK0NQ+FQwhRSS",
-	"W490NUe1s0bkId+F9Tni/hFTYxNUTNygloJrfA0SGP1Y5DAK4b8z9EvSz+uV1qW+KiXUZtFz1JpMsONC",
-	"a9zWgV3EjVdv0Tw/FVmR8zHJsZOzTQ4yzGR7gHKC+9hwNdVWkDtqwQ7EeyL7U1CbFfqADO54IX/P4FpK",
-	"u8T4g3DBfhdci+Dsxyj4ibnMiLGon1FpJjgkMBzEg9imEBI5kQwSOB7Eg2MIQRIzdeAi4l+5gy08fAue",
-	"GCb4iEIC3h9VMQBPF2pzXr37VHCD3O0jUmYsdTujR20h1L1n13PubEtlUxyjCnQL3hkO/VE8fG0MC+e5",
-	"9BR1qpg0nlCPj1pKT+L41TI3a1JH3nNCgyUrIegiz4maLRAFJOD4EtRS2pBa12jOaGkBTLBD22s01bXP",
-	"ZyPqfKFIjgaVhuR2Dsxmt16xHcQZ2L+Qpirhyj1bNfiuJVncp2Tfv72vWjb3SX+5x8IEV6LgdM0nV4zT",
-	"2h/B/SwYXVpokph02naFr2e9GOPNSkmzJu9VSnr1pcdHD+ZccBGQdYPaMtaYCLc1qPHKgPsWvtowL/Xc",
-	"pNoD0udrU0tJmwovWhXFDA22hb506wsKemxZJx5W08zBRcXq4Q3X2niFvTzLNrNp9HgPJeN+n+Jh/FiO",
-	"Hx3O2DqA9GSPN2wV7zqE7OXPwxjSMYa0jOriUD3X1itUBglMjZFJFMUD95ecxqdxRCSLnodQhmtBmUhJ",
-	"NhXabA8bHn1xpw2bYXfl7wAAAP//KEOxJNMVAAA=",
+	"H4sIAAAAAAAC/+xXX0/bPhT9KtH9/R6jJgWkobzxZ6BqUjeh7QnxYOJLa5TYxnZBVZXvPtlO2qRJ/2yD",
+	"AFLFA8i5yT0+59j3sIBU5FJw5EZDsgCdTjEn7s8zZVia4YVCYvAGn2aojV2XSkhUhqGruhd0bn+buURI",
+	"QBvF+ASKECiprzNucILKPsgFN9PuRxxftCQSlX38v8IHSOC/aIUwKuFF42VhEcIcier6XhGCwqcZU0gh",
+	"ufVI6z3KNytEHvJdWH1H3D9iamyDkokb1FJwja9BAqMfixxGIfx3hn5J+nm90trUV6WE2ix6jlqTCXZs",
+	"aI3bqrCLuHF9F83vpyKb5XxMcuzkbJODDDPZHqCc4L42rLfaCnLHXbAD8Z7I/hTUZoU+IIM7TsjfM7jW",
+	"0i4x/iBcsX8LrkVw9mMU/MRcZsRY1M+oNBMcEhgO4kFsWwiJnEgGCRwP4sExhCCJmTpwEfGn3MEWHr4F",
+	"TwwTfEQhAe+P8jIATxdqc16e+1Rwg9y9R6TMWOrejB61hVDNnl3HuXMsFU1xjJqhW/DOcOiP4uFrY1g6",
+	"z7WnqFPFpPGEenzUUnoSx6/WuXkndfQ9JzRYsRKCnuU5UfMlooAEHF+CSkpbUukaLRgtLACKGRpsy3vp",
+	"1svNn89H1LlDkRwNKg3J7QKYxWAdY+eIs7E/J01twtpuWzfxXUu4Ew+qvs2xCC5KPt+VYdv7pL/eY2GC",
+	"KzHjdE1br0xAKl2D+3kwurTwJthxTq/R9K9i3Ofx+/7t4AtI4Ipx2vaEJCadtl3hZ1MvxnizsdCcr3uN",
+	"hV596fHRgzmXXLQvLTuSGul+W9gY1/5ZeQtfbci+PQeOdtj9fJFjJWlT4T1jx5KCQ/D4iMFjKefu6PEe",
+	"Ssb9HsVD/FjFjw5nbA0gPdnjDUfFu4aQvfx5iCEdMaRlVFeH6rmy3kxlkMDUGJlEUTxwP8lpfBpHRLLo",
+	"eQhFuFaUiZRkU6HN9rLh0Rf3tWGz7K74HQAA//9INKVSnxcAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
