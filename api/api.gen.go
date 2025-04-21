@@ -57,7 +57,7 @@ type ErrorResponse struct {
 // Newspaper defines model for Newspaper.
 type Newspaper struct {
 	ColumnName string `json:"columnName"`
-	Id         int    `json:"id"`
+	Id         *int   `json:"id,omitempty"`
 	Title      string `json:"title"`
 }
 
