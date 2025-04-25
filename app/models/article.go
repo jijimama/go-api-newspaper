@@ -49,3 +49,11 @@ func CreateArticle(body string, year int, month int, day int, newspaperID int) (
 	}
 	return article, nil
 }
+
+func GetArticle(id int) (*Article, error) {
+	article := &Article{}
+	if err := DB.Where("id = ?", id).First(article).Error; err != nil {
+		return nil, err
+	}
+	return article, nil
+}
