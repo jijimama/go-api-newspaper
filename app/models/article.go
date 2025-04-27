@@ -57,3 +57,10 @@ func GetArticle(id int) (*Article, error) {
 	}
 	return article, nil
 }
+
+func (a *Article) Save() error {
+	if err := DB.Save(a).Error; err != nil {
+		return err
+	}
+	return nil
+}
