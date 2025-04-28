@@ -64,3 +64,10 @@ func (a *Article) Save() error {
 	}
 	return nil
 }
+
+func (a *Article) Delete() error {
+	if err := DB.Where("id = ?", a.ID).Delete(a).Error; err != nil {
+		return err
+	}
+	return nil
+}
