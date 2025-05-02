@@ -2,6 +2,9 @@ package models_test
 
 import (
 	"gorm.io/gorm"
+	"testing"
+
+	"github.com/stretchr/testify/suite"
 
 	"go-api-newspaper/pkg/tester"
 )
@@ -9,4 +12,8 @@ import (
 type ArticleTestSuite struct {
 	tester.DBSQLiteSuite
 	originalDB *gorm.DB
+}
+
+func TestArticleTestSuite(t *testing.T) {
+	suite.Run(t, new(ArticleTestSuite)) // 対象の構造体にメソッドとして定義されたテストケースを実行できる
 }
