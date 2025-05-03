@@ -4,6 +4,7 @@ import (
 	"gorm.io/gorm"
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/suite"
 
 	"go-api-newspaper/app/models"
@@ -22,4 +23,11 @@ func TestArticleTestSuite(t *testing.T) {
 func (suite *ArticleTestSuite) SetupSuite() {
 	suite.DBSQLiteSuite.SetupSuite()
 	suite.originalDB = models.DB // テスト前のデータベースの状態を保存
+}
+
+func (suite *ArticleTestSuite) MockDB() sqlmock.Sqlmock {
+	// mockにはsqlmock.Sqlmock（クエリの期待値設定用）が、mockGormDBにはgormのデータベースインスタンスが設定される
+	mock, mockGormDB := tester.MockDB()
+	models.DB = mockGormDB
+	return mock
 }
