@@ -31,3 +31,7 @@ func (suite *ArticleTestSuite) MockDB() sqlmock.Sqlmock {
 	models.DB = mockGormDB
 	return mock
 }
+
+func (suite *ArticleTestSuite) AfterTest(suiteName, testName string) {
+	models.DB = suite.originalDB // テスト前の状態に戻す
+}
