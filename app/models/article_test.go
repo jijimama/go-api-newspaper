@@ -43,4 +43,5 @@ func (suite *ArticleTestSuite) TestArticle() {
 	suite.Assert().Equal(2023, createdArticle.Year)
 	suite.Assert().Equal(10, createdArticle.Month)
 	suite.Assert().Equal(1, createdArticle.Day)
+	suite.Assert().Equal(1, createdArticle.NewspaperID)
 }
