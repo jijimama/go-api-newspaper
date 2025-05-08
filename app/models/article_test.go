@@ -22,6 +22,8 @@ func TestArticleTestSuite(t *testing.T) {
 
 func (suite *ArticleTestSuite) SetupSuite() {
 	suite.DBSQLiteSuite.SetupSuite()
+	err := models.DB.AutoMigrate(&models.Article{}, &models.Newspaper{})
+	suite.Assert().Nil(err, "マイグレーションに失敗しました")
 	suite.originalDB = models.DB // テスト前のデータベースの状態を保存
 }
 
@@ -37,7 +39,10 @@ func (suite *ArticleTestSuite) AfterTest(suiteName, testName string) {
 }
 
 func (suite *ArticleTestSuite) TestArticle() {
-	createdArticle, err := models.CreateArticle("Test", 2023, 10, 1, 1)
+	createdNewspaper, err := models.CreateNewspaper("Test Newspaper", "Test Column")
+	suite.Assert().Nil(err)
+
+	createdArticle, err := models.CreateArticle("Test", 2023, 10, 1, createdNewspaper.ID)
 	suite.Assert().Nil(err)
 	suite.Assert().Equal("Test", createdArticle.Body)
 	suite.Assert().Equal(2023, createdArticle.Year)
