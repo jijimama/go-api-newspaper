@@ -49,4 +49,13 @@ func (suite *ArticleTestSuite) TestArticle() {
 	suite.Assert().Equal(10, createdArticle.Month)
 	suite.Assert().Equal(1, createdArticle.Day)
 	suite.Assert().Equal(1, createdArticle.NewspaperID)
+
+	getArticle, err := models.GetArticle(createdArticle.ID)
+	suite.Assert().Nil(err)
+	suite.Assert().Equal("Test", getArticle.Body)
+	suite.Assert().Equal(2023, getArticle.Year)
+	suite.Assert().Equal(10, getArticle.Month)
+	suite.Assert().Equal(1, getArticle.Day)
+	suite.Assert().Equal(1, getArticle.NewspaperID)
+	suite.Assert().Equal(createdNewspaper.ID, getArticle.Newspaper.ID)
 }
