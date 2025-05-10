@@ -58,4 +58,6 @@ func (suite *ArticleTestSuite) TestArticle() {
 	suite.Assert().Equal(1, getArticle.Day)
 	suite.Assert().Equal(1, getArticle.NewspaperID)
 	suite.Assert().Equal(createdNewspaper.ID, getArticle.Newspaper.ID)
+	suite.Assert().Equal(createdNewspaper.Title, getArticle.Newspaper.Title)
+	suite.Assert().Equal(createdNewspaper.ColumnName, getArticle.Newspaper.ColumnName)
 }
