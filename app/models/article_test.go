@@ -2,6 +2,7 @@ package models_test
 
 import (
 	"gorm.io/gorm"
+	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -68,4 +69,11 @@ func (suite *ArticleTestSuite) TestArticle() {
 	suite.Assert().Equal(10, updatedArticle.Month)
 	suite.Assert().Equal(1, updatedArticle.Day)
 	suite.Assert().Equal(1, updatedArticle.NewspaperID)
+
+	err = updatedArticle.Delete()
+	suite.Assert().Nil(err)
+	deletedArticle, err := models.GetArticle(updatedArticle.ID)
+	suite.Assert().Nil(deletedArticle)
+	suite.Assert().True(err != nil)
+	suite.Assert().True(strings.Contains("record not found", err.Error()))
 }
