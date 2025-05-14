@@ -77,3 +77,22 @@ func (suite *ArticleTestSuite) TestArticle() {
 	suite.Assert().True(err != nil)
 	suite.Assert().True(strings.Contains("record not found", err.Error()))
 }
+
+func (suite *ArticleTestSuite) TestArticleMarshal() {
+	article := models.Article{
+		ID:          1,
+		Body:        "Test",
+		Year:        2023,
+		Month:       10,
+		Day:         1,
+		NewspaperID: 1,
+		Newspaper: &models.Newspaper{
+			ID:         1,
+			Title:      "Test Newspaper",
+			ColumnName: "Test Column",
+		},
+	}
+	newspaperJSON, err := article.MarshalJSON()
+	suite.Assert().Nil(err)
+	suite.Assert().Equal(`{"body":"Test","day":1,"id":1,"month":10,"newspaper":{"columnName":"Test Column","id":1,"title":"Test Newspaper"},"year":2023}`, string(newspaperJSON))
+}
