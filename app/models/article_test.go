@@ -96,3 +96,10 @@ func (suite *ArticleTestSuite) TestArticleMarshal() {
 	suite.Assert().Nil(err)
 	suite.Assert().Equal(`{"body":"Test","day":1,"id":1,"month":10,"newspaper":{"columnName":"Test Column","id":1,"title":"Test Newspaper"},"year":2023}`, string(newspaperJSON))
 }
+
+func (suite *ArticleTestSuite) TestArticleCreateFailure() {
+	// MockDBを使用して、Createメソッドがエラーを返すように設定
+	mock := suite.MockDB()
+	// 新聞社のINSERTに対するモック
+	mock.ExpectBegin()
+}
