@@ -1,6 +1,7 @@
 package models_test
 
 import (
+	"errors"
 	"gorm.io/gorm"
 	"strings"
 	"testing"
@@ -99,8 +100,18 @@ func (suite *ArticleTestSuite) TestArticleMarshal() {
 
 func (suite *ArticleTestSuite) TestArticleCreateFailure() {
 	// MockDBを使用して、Createメソッドがエラーを返すように設定
-	mock := suite.MockDB()
-	// 新聞社のINSERTに対するモック
-	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO `newspapers`").WillReturnError(gorm.ErrInvalidTransaction)
+	mockDB := suite.MockDB()
+	newspaper := models.Newspaper{
+		Title:      "Test",
+		ColumnName: "sports",
+	}
+
+	mockDB.ExpectBegin()
+	mockDB.ExpectQuery("INSERT INTO `articles`").WithArgs("Test", 2023, 10, 1, newspaper.ID).WillReturnError(errors.New("create error"))
+	mockDB.ExpectRollback()
+	// トランザクションのロールバックやコミット操作を期待
+	mockDB.ExpectCommit()
+	article, err := models.CreateArticle("Test", 2023, 10, 1, newspaper.ID)
+	suite.Assert().Nil(article)
+	suite.Assert().NotNil(err)
 }
