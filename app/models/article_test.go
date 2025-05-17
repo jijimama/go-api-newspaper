@@ -102,4 +102,5 @@ func (suite *ArticleTestSuite) TestArticleCreateFailure() {
 	mock := suite.MockDB()
 	// 新聞社のINSERTに対するモック
 	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO `newspapers`").WillReturnError(gorm.ErrInvalidTransaction)
 }
