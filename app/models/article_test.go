@@ -106,6 +106,7 @@ func (suite *ArticleTestSuite) TestArticleCreateFailure() {
 		ColumnName: "sports",
 	}
 
+	// トランザクションの開始を期待
 	mockDB.ExpectBegin()
 	mockDB.ExpectQuery("INSERT INTO `articles`").WithArgs("Test", 2023, 10, 1, newspaper.ID).WillReturnError(errors.New("create error"))
 	mockDB.ExpectRollback()
