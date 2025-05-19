@@ -3,6 +3,7 @@ package models_test
 import (
 	"errors"
 	"gorm.io/gorm"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -115,4 +116,15 @@ func (suite *ArticleTestSuite) TestArticleCreateFailure() {
 	article, err := models.CreateArticle("Test", 2023, 10, 1, newspaper.ID)
 	suite.Assert().Nil(article)
 	suite.Assert().NotNil(err)
+}
+
+func (suite *ArticleTestSuite) TestArticleGetFailure() {
+	// MockDBを使用して、Getメソッドがエラーを返すように設定
+	mockDB := suite.MockDB()
+	mockDB.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `articles` WHERE id = ? ORDER BY `articles`.`id` LIMIT ?")).WithArgs(1, 1).WillReturnError(errors.New("get error"))
+
+	article, err := models.GetArticle(1)
+	suite.Assert().Nil(article)
+	suite.Assert().NotNil(err)
+	suite.Assert().Equal("get error", err.Error())
 }
