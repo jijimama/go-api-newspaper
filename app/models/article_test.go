@@ -100,22 +100,38 @@ func (suite *ArticleTestSuite) TestArticleMarshal() {
 }
 
 func (suite *ArticleTestSuite) TestArticleCreateFailure() {
-	// MockDBを使用して、Createメソッドがエラーを返すように設定
 	mockDB := suite.MockDB()
+
 	newspaper := models.Newspaper{
+		ID:         1,
 		Title:      "Test",
 		ColumnName: "sports",
 	}
 
-	// トランザクションの開始を期待
+	// 新聞の取得をモック
+	mockDB.ExpectQuery(regexp.QuoteMeta(
+		"SELECT * FROM `newspapers` WHERE `newspapers`.`id` = ? ORDER BY `newspapers`.`id` LIMIT ?",
+	)).WithArgs(1, 1).WillReturnRows(sqlmock.NewRows([]string{"id", "title", "column_name"}).
+		AddRow(newspaper.ID, newspaper.Title, newspaper.ColumnName),
+	)
+
 	mockDB.ExpectBegin()
-	mockDB.ExpectQuery("INSERT INTO `articles`").WithArgs("Test", 2023, 10, 1, newspaper.ID).WillReturnError(errors.New("create error"))
+	mockDB.ExpectExec(regexp.QuoteMeta(
+		"INSERT INTO `newspapers` (`title`,`column_name`,`id`) VALUES (?,?,?) ON DUPLICATE KEY UPDATE `id`=`id`",
+	)).WithArgs(newspaper.Title, newspaper.ColumnName, newspaper.ID).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	mockDB.ExpectExec(regexp.QuoteMeta("INSERT INTO `articles`")).
+		WithArgs("Test", 2023, 10, 1, newspaper.ID).
+		WillReturnError(errors.New("create error"))
+
 	mockDB.ExpectRollback()
-	// トランザクションのロールバックやコミット操作を期待
-	mockDB.ExpectCommit()
+
 	article, err := models.CreateArticle("Test", 2023, 10, 1, newspaper.ID)
+
 	suite.Assert().Nil(article)
 	suite.Assert().NotNil(err)
+	suite.Assert().Equal("create error", err.Error())
 }
 
 func (suite *ArticleTestSuite) TestArticleGetFailure() {
