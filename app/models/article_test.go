@@ -144,3 +144,29 @@ func (suite *ArticleTestSuite) TestArticleGetFailure() {
 	suite.Assert().NotNil(err)
 	suite.Assert().Equal("get error", err.Error())
 }
+
+func (suite *ArticleTestSuite) TestArticleSaveFailure() {
+	mockDB := suite.MockDB()
+	mockDB.ExpectBegin()
+	mockDB.ExpectExec(regexp.QuoteMeta(
+		"UPDATE `articles` SET `body`=?,`year`=?,`month`=?,`day`=?,`newspaper_id`=? WHERE `id` = ?",
+	)).WithArgs("updated", 2023, 10, 1, 1, 1).
+		WillReturnError(errors.New("update error"))
+
+	mockDB.ExpectRollback()
+
+	article := models.Article{
+		ID:          1,
+		Body:        "Test",
+		Year:        2023,
+		Month:       10,
+		Day:         1,
+		NewspaperID: 1,
+	}
+
+	article.Body = "updated"
+
+	err := article.Save()
+	suite.Assert().NotNil(err)
+	suite.Assert().Equal("update error", err.Error())
+}
