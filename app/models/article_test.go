@@ -170,3 +170,27 @@ func (suite *ArticleTestSuite) TestArticleSaveFailure() {
 	suite.Assert().NotNil(err)
 	suite.Assert().Equal("update error", err.Error())
 }
+
+func (suite *ArticleTestSuite) TestArticleDeleteFailure() {
+	mockDB := suite.MockDB()
+	mockDB.ExpectBegin()
+	mockDB.ExpectExec(regexp.QuoteMeta(
+		"DELETE FROM `articles` WHERE id = ?",
+	)).WithArgs(0).
+		WillReturnError(errors.New("delete error"))
+
+	mockDB.ExpectRollback()
+
+	article := models.Article{
+		ID:          0, // <- 削除対象のID
+		Body:        "Test",
+		Year:        2023,
+		Month:       10,
+		Day:         1,
+		NewspaperID: 1,
+	}
+
+	err := article.Delete()
+	suite.Assert().NotNil(err)
+	suite.Assert().Equal("delete error", err.Error())
+}
