@@ -182,7 +182,7 @@ func (suite *ArticleTestSuite) TestArticleDeleteFailure() {
 	mockDB.ExpectRollback()
 
 	article := models.Article{
-		ID:          0, // <- 削除対象のID
+		ID:          0,
 		Body:        "Test",
 		Year:        2023,
 		Month:       10,
