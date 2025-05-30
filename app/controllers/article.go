@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"go-api-newspaper/api"
+	"go-api-newspaper/app/models"
 	"go-api-newspaper/pkg/logger"
 )
 
@@ -17,4 +18,19 @@ func (a *ArticleHandler) CreateArticle(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{Message: err.Error()})
 		return
 	}
+
+	createdArticle, err := models.CreateArticle(
+		requestBody.Body,
+		requestBody.Year,
+		requestBody.Month,
+		requestBody.Day,
+		requestBody.NewspaperID,
+	)
+	if err != nil {
+		logger.Error(err.Error())
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, createdArticle) // 201 レスポンスに書き込み
 }
