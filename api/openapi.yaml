@@ -229,19 +229,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    Newspaper:
-      type: object
-      properties:
-        id:
-          type: integer
-        title:
-          type: string
-        columnName:
-          type: string
-      required:
-        - id
-        - title
-        - columnName
     NewspaperResponse:
       type: object
       properties:
@@ -279,8 +266,8 @@ components:
           type: integer  # 新聞記事の一意の識別子。
         body:
           type: string  # 新聞記事の本文。
-        newspaper:
-          $ref: '#/components/schemas/Newspaper' # 新聞記事に関連する新聞データを参照。
+        newspaperID:
+          type: integer # 新聞記事に関連する新聞データを参照。
         year:
           type: integer  # 新聞記事の発行年。
         month:
@@ -299,8 +286,8 @@ components:
       properties:
         body:
           type: string  # 更新対象の新聞記事の本文。
-        newspaper:
-          $ref: '#/components/schemas/Newspaper' # 新聞記事に関連する新聞データを参照。
+        newspaperID:
+          type:  integer # 新聞記事に関連する新聞データを参照。
         year:
           type: integer  # 更新対象の新聞記事の発行年。
         month:
@@ -312,8 +299,8 @@ components:
       properties:
         body:
           type: string  # 新聞記事の本文。
-        newspaper:
-          $ref: '#/components/schemas/Newspaper' # 新聞記事に関連する新聞データを参照。
+        newspaperID:
+          type: integer # 新聞記事に関連する新聞データを参照。
         year:
           type: integer  # 新聞記事の発行年。
         month:
