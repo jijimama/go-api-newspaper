@@ -24,7 +24,7 @@ func (a *ArticleHandler) CreateArticle(c *gin.Context) {
 		requestBody.Year,
 		requestBody.Month,
 		requestBody.Day,
-		requestBody.NewspaperID,
+		*requestBody.NewspaperID,
 	)
 	if err != nil {
 		logger.Error(err.Error())
