@@ -23,42 +23,35 @@ import (
 
 // ArticleCreateRequest defines model for ArticleCreateRequest.
 type ArticleCreateRequest struct {
-	Body      string    `json:"body"`
-	Day       int       `json:"day"`
-	Month     int       `json:"month"`
-	Newspaper Newspaper `json:"newspaper"`
-	Year      int       `json:"year"`
+	Body        string `json:"body"`
+	Day         int    `json:"day"`
+	Month       int    `json:"month"`
+	NewspaperID *int   `json:"newspaperID,omitempty"`
+	Year        int    `json:"year"`
 }
 
 // ArticleResponse defines model for ArticleResponse.
 type ArticleResponse struct {
-	Body      string    `json:"body"`
-	Day       int       `json:"day"`
-	Id        int       `json:"id"`
-	Month     int       `json:"month"`
-	Newspaper Newspaper `json:"newspaper"`
-	Year      int       `json:"year"`
+	Body        string `json:"body"`
+	Day         int    `json:"day"`
+	Id          int    `json:"id"`
+	Month       int    `json:"month"`
+	NewspaperID *int   `json:"newspaperID,omitempty"`
+	Year        int    `json:"year"`
 }
 
 // ArticleUpdateRequest defines model for ArticleUpdateRequest.
 type ArticleUpdateRequest struct {
-	Body      *string    `json:"body,omitempty"`
-	Day       *int       `json:"day,omitempty"`
-	Month     *int       `json:"month,omitempty"`
-	Newspaper *Newspaper `json:"newspaper,omitempty"`
-	Year      *int       `json:"year,omitempty"`
+	Body        *string `json:"body,omitempty"`
+	Day         *int    `json:"day,omitempty"`
+	Month       *int    `json:"month,omitempty"`
+	NewspaperID *int    `json:"newspaperID,omitempty"`
+	Year        *int    `json:"year,omitempty"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	Message string `json:"message"`
-}
-
-// Newspaper defines model for Newspaper.
-type Newspaper struct {
-	ColumnName string `json:"columnName"`
-	Id         *int   `json:"id,omitempty"`
-	Title      string `json:"title"`
 }
 
 // NewspaperCreateRequest defines model for NewspaperCreateRequest.
@@ -1559,19 +1552,19 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"ll4P6x598ad1V8Pupr8DAAD//3ZtPum7FgAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
