@@ -96,7 +96,7 @@ func (suite *ArticleTestSuite) TestArticleMarshal() {
 	}
 	newspaperJSON, err := article.MarshalJSON()
 	suite.Assert().Nil(err)
-	suite.Assert().Equal(`{"body":"Test","day":1,"id":1,"month":10,"newspaper":{"columnName":"Test Column","id":1,"title":"Test Newspaper"},"year":2023}`, string(newspaperJSON))
+	suite.Assert().Equal(`{"body":"Test","day":1,"id":1,"month":10,"newspaperID":1,"year":2023}`, string(newspaperJSON))
 }
 
 func (suite *ArticleTestSuite) TestArticleCreateFailure() {
